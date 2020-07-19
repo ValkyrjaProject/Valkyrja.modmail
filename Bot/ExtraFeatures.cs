@@ -26,7 +26,7 @@ namespace Valkyrja.modules
 
 		public List<Command> Init(IValkyrjaClient iClient)
 		{
-			this.Client = iClient as ValkyrjaClient<Config>;
+			this.Client = iClient as ValkyrjaClient<BaseConfig>;
 			List<Command> commands = new List<Command>();
 
 // !embed
@@ -98,9 +98,9 @@ namespace Valkyrja.modules
 						return;
 					}
 
-					if( value.Length >= Config.EmbedValueCharacterLimit )
+					if( value.Length >= BaseConfig.EmbedValueCharacterLimit )
 					{
-						await e.SendReplySafe($"`{optionString}` is too long! (It's {value.Length} characters while the limit is {Config.EmbedValueCharacterLimit})");
+						await e.SendReplySafe($"`{optionString}` is too long! (It's {value.Length} characters while the limit is {BaseConfig.EmbedValueCharacterLimit})");
 						return;
 					}
 
