@@ -13,5 +13,8 @@ namespace Valkyrja.modmail
 		//public bool ModmailUseEmbeds = true;
 		public string ModmailFooterOverride = "";
 		public string ModmailNewThreadMessage = "";
+		public string ModmailEmbedColorAdmins = "#ff0000";
+		public string ModmailEmbedColorMods = "#0000ff";
+		public string ModmailEmbedColorMembers = "#00ff00";
 	}
 }

@@ -100,7 +100,8 @@ namespace Valkyrja.modmail
 					return;
 				}
 
-				Embed embed = GetMessageEmbed("Moderators", e.Server.Guild.IconUrl, "Moderator", e.Message);
+				uint color = uint.Parse(this.Client.Config.ModmailEmbedColorMods.TrimStart('#'), System.Globalization.NumberStyles.AllowHexSpecifier);
+				Embed embed = GetMessageEmbed("Moderators", e.Server.Guild.IconUrl, "Moderator", color, e.Message);
 				await SendModmailPm(e.Channel, userId, null, embed);
 			};
 			commands.Add(newCommand);
@@ -185,6 +186,7 @@ namespace Valkyrja.modmail
 		private Embed GetMessageEmbed(IMessage message)
 		{
 			string footer = "Member";
+			uint color = uint.Parse(this.Client.Config.ModmailEmbedColorMembers.TrimStart('#'), System.Globalization.NumberStyles.AllowHexSpecifier);
 			if( !(message.Author is SocketUser user) )
 				return null;
 
@@ -196,23 +198,32 @@ namespace Valkyrja.modmail
 
 				SocketGuildUser guildUser = guild.GetUser(user.Id);
 				if( server.IsModerator(guildUser) || server.IsSubModerator(guildUser) )
+				{
 					footer = "Moderator";
+					color = uint.Parse(this.Client.Config.ModmailEmbedColorMods.TrimStart('#'), System.Globalization.NumberStyles.AllowHexSpecifier);
+				}
+
 				if( server.IsAdmin(guildUser) )
+				{
 					footer = "Admin";
+					color = uint.Parse(this.Client.Config.ModmailEmbedColorAdmins.TrimStart('#'), System.Globalization.NumberStyles.AllowHexSpecifier);
+				}
+
 				if( footer != "Member" && !string.IsNullOrEmpty(this.Client.Config.ModmailFooterOverride) )
 					footer = this.Client.Config.ModmailFooterOverride;
 			}
 
 			string name = user.GetUsername();
 			string avatarUrl = user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl();
-			return GetMessageEmbed(name, avatarUrl, footer, message);
+			return GetMessageEmbed(name, avatarUrl, footer, color, message);
 		}
-		private Embed GetMessageEmbed(string name, string avatarUrl, string footer, IMessage message)
+		private Embed GetMessageEmbed(string name, string avatarUrl, string footer, uint color, IMessage message)
 		{
 			EmbedBuilder embedBuilder = new EmbedBuilder()
 				.WithAuthor(new EmbedAuthorBuilder{IconUrl = avatarUrl, Name = name})
 				.WithTimestamp(DateTimeOffset.UtcNow)
-				.WithFooter(new EmbedFooterBuilder{Text = footer});
+				.WithFooter(new EmbedFooterBuilder{Text = footer})
+				.WithColor(color);
 
 			string messageText = message.Content;
 			if( message.Content.StartsWith($"{this.Client.CoreConfig.CommandPrefix}reply") )
