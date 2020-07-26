@@ -34,7 +34,7 @@ namespace Valkyrja.modmail
 			Command newCommand = new Command("contact");
 			newCommand.Type = CommandType.Standard;
 			newCommand.Description = "Create a new modmail thread with the mentioned user.";
-			newCommand.ManPage = new ManPage("<userId>", "<userId> - User mention or ID with whom to initiate a discussion.");
+			newCommand.ManPage = new ManPage("<userId>", "`<userId>` - User mention or ID with whom to initiate a discussion.");
 			newCommand.RequiredPermissions = PermissionType.ServerOwner | PermissionType.Admin | PermissionType.Moderator | PermissionType.SubModerator;
 			newCommand.OnExecute += async e => {
 				List<guid> userIds = this.Client.GetMentionedUserIds(e);
@@ -59,7 +59,7 @@ namespace Valkyrja.modmail
 			newCommand = new Command("reply");
 			newCommand.Type = CommandType.Standard;
 			newCommand.Description = "Reply in the current thread.";
-			newCommand.ManPage = new ManPage("<message text>", "<message text> - Message that will be sent to the user.");
+			newCommand.ManPage = new ManPage("<message text>", "`<message text>` - Message that will be sent to the user.");
 			newCommand.RequiredPermissions = PermissionType.ServerOwner | PermissionType.Admin | PermissionType.Moderator | PermissionType.SubModerator;
 			newCommand.OnExecute += async e => {
 				if( string.IsNullOrEmpty(e.TrimmedMessage) && (!e.Message.Attachments?.Any() ?? false) )
@@ -76,6 +76,31 @@ namespace Valkyrja.modmail
 				}
 
 				Embed embed = GetMessageEmbed(e.Message);
+				await SendModmailPm(e.Channel, userId, null, embed);
+			};
+			commands.Add(newCommand);
+
+// !anonReply
+			newCommand = new Command("anonReply");
+			newCommand.Type = CommandType.Standard;
+			newCommand.Description = "Reply in the current thread anonymously.";
+			newCommand.ManPage = new ManPage("<message text>", "`<message text>` - Message that will be sent to the user.");
+			newCommand.RequiredPermissions = PermissionType.ServerOwner | PermissionType.Admin | PermissionType.Moderator | PermissionType.SubModerator;
+			newCommand.OnExecute += async e => {
+				if( string.IsNullOrEmpty(e.TrimmedMessage) && (!e.Message.Attachments?.Any() ?? false) )
+				{
+					await e.SendReplySafe("I can't send an empty message.");
+					return;
+				}
+
+				Match match = this.IdRegex.Match(e.Channel.Topic ?? "");
+				if( !match.Success || !guid.TryParse(match.Value, out guid userId) )
+				{
+					await e.SendReplySafe("This does not seem to be a modmail thread. This command can only be used in a modmail thread channel.");
+					return;
+				}
+
+				Embed embed = GetMessageEmbed("Moderators", e.Server.Guild.IconUrl, "Moderator", e.Message);
 				await SendModmailPm(e.Channel, userId, null, embed);
 			};
 			commands.Add(newCommand);
@@ -192,6 +217,8 @@ namespace Valkyrja.modmail
 			string messageText = message.Content;
 			if( message.Content.StartsWith($"{this.Client.CoreConfig.CommandPrefix}reply") )
 				messageText = message.Content.Substring($"{this.Client.CoreConfig.CommandPrefix}reply".Length);
+			if( message.Content.StartsWith($"{this.Client.CoreConfig.CommandPrefix}anonReply") )
+				messageText = message.Content.Substring($"{this.Client.CoreConfig.CommandPrefix}anonReply".Length);
 			if( !string.IsNullOrEmpty(messageText) )
 				embedBuilder.WithDescription(messageText);
 
