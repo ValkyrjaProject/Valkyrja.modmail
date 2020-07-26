@@ -9,6 +9,7 @@ namespace Valkyrja.modmail
 		public guid ModmailServerId = 0;
 		public guid ModmailCategoryId = 0;
 		public guid ModmailArchiveCategoryId = 0;
+		public int ModmailArchiveLimit = 5;
 		//public bool ModmailUseEmbeds = true;
 		public string ModmailFooterOverride = "";
 		public string ModmailNewThreadMessage = "";

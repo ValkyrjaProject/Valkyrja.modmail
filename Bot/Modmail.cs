@@ -224,7 +224,7 @@ namespace Valkyrja.modmail
 			IChannel channel = server.Guild.Channels.FirstOrDefault(c => c is SocketTextChannel cc && (cc.Topic?.Contains(userId.ToString()) ?? false));
 			if( channel == null )
 			{
-				channel = await server.Guild.CreateTextChannelAsync(user.GetUsername(), c => {
+				channel = await server.Guild.CreateTextChannelAsync(user.GetUsername().Replace('#', '-'), c => {
 					c.Topic = $"UserId: {userId}";
 					c.CategoryId = this.Client.Config.ModmailCategoryId;
 				});
@@ -257,6 +257,15 @@ namespace Valkyrja.modmail
 			}
 
 			await channel.ModifyAsync(c => c.CategoryId = this.Client.Config.ModmailArchiveCategoryId);
+
+			SocketCategoryChannel category = channel.Guild.GetCategoryChannel(this.Client.Config.ModmailArchiveCategoryId);
+			while( category?.Channels.Count > this.Client.Config.ModmailArchiveLimit )
+			{
+				SocketGuildChannel oldChannel = category.Channels.OrderBy(c => c.Id).FirstOrDefault();
+				if( oldChannel == null )
+					break;
+				await oldChannel.DeleteAsync();
+			}
 
 			await SendModmailPm(channel, userId, "Thread closed. You're welcome to send another message, should you wish to contact the moderators again.");
 		}
