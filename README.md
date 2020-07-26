@@ -18,15 +18,27 @@ The Valkyrja project is split into these repositories:
 
 ## Self hosting
 
+You will need to [create a Discord Bot.](https://discordpy.readthedocs.io/en/latest/discord.html)
+
 ### Docker / Podman
 
 //todo
 
 ### Linux
 
-//todo
+1) Install .NET Core preferably using your package manager, e.g: `$ sudo dnf install dotnet` on Fedora.
+2) Clone this repository recursively: `git clone --recursive git@github.com:ValkyrjaProject/Valkyrja.modmail.git`
+3) Run it with `dotnet run` to create an empty `config.json`
+4) Move the `config.json` into the `bin/Release/` (you need to create these folders first) and then modify it to configure the the bot - more details in the __Configuration__ section.
+5) Copy the example systemd unit file `systemd-example.service` into the `/etc/systemd/system/` path: `$ sudo cp systemd-example.service /etc/systemd/system/modmail.service`
+6) Modify this file to reflect the correct path to the project, based on wherever you cloned it.
+7) Enable and start the service: `$ sudo systemctl enable --now modmail`
 
 ### Windows
 
-//todo
+//todo [Issue #1](https://github.com/ValkyrjaProject/Valkyrja.modmail/issues/1)
+
+## Configuration
+
+//todo - simply explain the different config options.
 

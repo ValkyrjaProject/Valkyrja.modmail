@@ -1,0 +1,19 @@
+[Unit]
+Description=Discord Modmail
+After=network.target
+
+[Service]
+User=project
+Group=project
+Type=simple
+Environment=VALKYRJA_MODMAIL_PATH="/home/project/modmail"
+ExecStartPre=/usr/bin/dotnet build $VALKYRJA_MODMAIL_PATH/Valkyrja.modmail.sln -o $VALKYRJA_MODMAIL_PATH/bin/Release
+ExecStart=/usr/bin/dotnet $VALKYRJA_MODMAIL_PATH/bin/Release/Valkyrja.modmail.dll 
+WorkingDirectory=VALKYRJA_MODMAIL_PATH/bin/Release
+TimeoutStopSec=10
+Restart=always
+RestartSec=5
+SyslogIdentifier=Modmail
+
+[Install]
+WantedBy=multi-user.target
