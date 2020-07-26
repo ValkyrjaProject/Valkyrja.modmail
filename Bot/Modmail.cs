@@ -109,11 +109,12 @@ namespace Valkyrja.modmail
 
 				Embed embed = GetMessageEmbed(message);
 				await channel.SendMessageAsync(embed: embed);
-				await message.AddReactionAsync(new Emoji("\uFE0F"));
+				await message.AddReactionAsync(new Emoji("✅"));
 			}
 			catch( Exception e )
 			{
 				await this.HandleException(e, "OnMessageReceived", 0);
+				await message.AddReactionAsync(new Emoji("❌"));
 			}
 		}
 
