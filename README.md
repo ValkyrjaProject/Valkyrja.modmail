@@ -47,24 +47,24 @@ You will need to [create a Discord Bot.](https://discordpy.readthedocs.io/en/lat
 ### Bot config file
 
 `config.json` contains these properties with their default values:
-`"ModmailServerId" = 0` - ID of a server on which you wish to have modmail threads.
-`"ModmailCategoryId" = 0` - Main modmail category for active threads.
-`"ModmailArchiveCategoryId" = 0` - Archive category where closed threads live.
-`"ModmailArchiveLimit" = 5` - Oldest threads will be deleted after exceeding this number of closed threads in the Archive.
-`"ModmailFooterOverride" = ""` - Defaults to configured roles for Admin or Moderator if left empty.
-`"ModmailNewThreadMessage" = ""` - Used to ping the staff for newly created threads - use raw mention format: `<@&roleid>`
-`"ModmailEmbedColorAdmins" = "#ff0000"` - Embed color for Admin messages.
-`"ModmailEmbedColorMods" = "#0000ff"` - Embed color for Moderator messages.
-`"ModmailEmbedColorMembers" = "#00ff00"` - Embed color for all other member messages.
+* `"ModmailServerId" = 0` - ID of a server on which you wish to have modmail threads.
+* `"ModmailCategoryId" = 0` - Main modmail category for active threads.
+* `"ModmailArchiveCategoryId" = 0` - Archive category where closed threads live.
+* `"ModmailArchiveLimit" = 5` - Oldest threads will be deleted after exceeding this number of closed threads in the Archive.
+* `"ModmailFooterOverride" = ""` - Defaults to configured roles for Admin or Moderator if left empty.
+* `"ModmailNewThreadMessage" = ""` - Used to ping the staff for newly created threads - use raw mention format: `<@&roleid>`
+* `"ModmailEmbedColorAdmins" = "#ff0000"` - Embed color for Admin messages.
+* `"ModmailEmbedColorMods" = "#0000ff"` - Embed color for Moderator messages.
+* `"ModmailEmbedColorMembers" = "#00ff00"` - Embed color for all other member messages.
 
-`"DiscordToken" = "asdfasdfasdf"` - Your Discord token goes here, don't forget the quotes.
-`"GameStatus" = "PM me to reach Mods!"` - The "Playing..." status message.
-`"CommandPrefix" = "!"` - How the commands will be triggered.
-`"OwnerUserId" = 0` - User ID of the administrator of this bot.
-`"NotificationChannelId" = 0` - This channel may be used to notify the team of possible errors.
-`"AdminRoleIds" = [0]` - A list of role IDs that will have Admin permissions.
-`"ModeratorRoleIds" = [0]` - A list of role IDs that will have Moderator permissions.
-`"SubModeratorRoleIds" = [0]` - A list of role IDs that will have SubModerator permissions.
+* `"DiscordToken" = "asdfasdfasdf"` - Your Discord token goes here, don't forget the quotes.
+* `"GameStatus" = "PM me to reach Mods!"` - The "Playing..." status message.
+* `"CommandPrefix" = "!"` - How the commands will be triggered.
+* `"OwnerUserId" = 0` - User ID of the administrator of this bot.
+* `"NotificationChannelId" = 0` - This channel may be used to notify the team of possible errors.
+* `"AdminRoleIds" = [0]` - A list of role IDs that will have Admin permissions.
+* `"ModeratorRoleIds" = [0]` - A list of role IDs that will have Moderator permissions.
+* `"SubModeratorRoleIds" = [0]` - A list of role IDs that will have SubModerator permissions.
 
 You are advised to leave everything else with its default value.
 
