@@ -1,7 +1,4 @@
-[submodule "Valkyrja.coreLite"]
-  path = Core
-  url = git@github.com:ValkyrjaProject/Valkyrja.coreLite.git
-  ignore = all
 [submodule "Core"]
 	path = Core
 	url = git@github.com:ValkyrjaProject/Valkyrja.coreLite.git
+	ignore = all
