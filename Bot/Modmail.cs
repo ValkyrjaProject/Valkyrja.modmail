@@ -226,9 +226,9 @@ namespace Valkyrja.modmail
 				.WithColor(color);
 
 			string messageText = message.Content;
-			if( message.Content.StartsWith($"{this.Client.CoreConfig.CommandPrefix}reply") )
+			if( message.Content.ToLower().StartsWith($"{this.Client.CoreConfig.CommandPrefix}reply") )
 				messageText = message.Content.Substring($"{this.Client.CoreConfig.CommandPrefix}reply".Length);
-			if( message.Content.StartsWith($"{this.Client.CoreConfig.CommandPrefix}anonReply") )
+			if( message.Content.ToLower().StartsWith($"{this.Client.CoreConfig.CommandPrefix}anonreply") )
 				messageText = message.Content.Substring($"{this.Client.CoreConfig.CommandPrefix}anonReply".Length);
 			if( !string.IsNullOrEmpty(messageText) )
 				embedBuilder.WithDescription(messageText);
