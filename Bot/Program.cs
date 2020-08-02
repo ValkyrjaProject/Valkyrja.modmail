@@ -67,7 +67,7 @@ namespace Valkyrja.modmail
 // !about
 			Command newCommand = new Command("about");
 			newCommand.Type = CommandType.Standard;
-			newCommand.Description = "The best command of all time.";
+			newCommand.Description = "Display basic info about the bot.";
 			newCommand.RequiredPermissions = PermissionType.Everyone;
 			newCommand.OnExecute += async e => {
 				await e.SendReplySafe("Valkyrja Modmail is an Open Source bot that enables private communication between the members of your community and the moderation team.\nYou can find the source code (and hosting information) at <https://github.com/ValkyrjaProject/Valkyrja.modmail> and get help at https://valkyrja.app/help");
