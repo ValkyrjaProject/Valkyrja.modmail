@@ -44,7 +44,7 @@ namespace Valkyrja.modmail
 					return;
 				}
 
-				ITextChannel channel = await FindOrCreateThread(userIds.First(), false);
+				ITextChannel channel = await FindOrCreateThread(userIds.First(), true);
 				if( channel == null )
 				{
 					await e.SendReplySafe("Failed to create a channel.");
@@ -58,6 +58,7 @@ namespace Valkyrja.modmail
 // !reply
 			newCommand = new Command("reply");
 			newCommand.Type = CommandType.Standard;
+			newCommand.DeleteRequest = true;
 			newCommand.Description = "Reply in the current thread.";
 			newCommand.ManPage = new ManPage("<message text>", "`<message text>` - Message that will be sent to the user.");
 			newCommand.RequiredPermissions = PermissionType.ServerOwner | PermissionType.Admin | PermissionType.Moderator | PermissionType.SubModerator;
@@ -83,6 +84,7 @@ namespace Valkyrja.modmail
 // !anonReply
 			newCommand = new Command("anonReply");
 			newCommand.Type = CommandType.Standard;
+			newCommand.DeleteRequest = true;
 			newCommand.Description = "Reply in the current thread anonymously.";
 			newCommand.ManPage = new ManPage("<message text>", "`<message text>` - Message that will be sent to the user.");
 			newCommand.RequiredPermissions = PermissionType.ServerOwner | PermissionType.Admin | PermissionType.Moderator | PermissionType.SubModerator;
@@ -113,9 +115,11 @@ namespace Valkyrja.modmail
 			newCommand.ManPage = new ManPage("", "");
 			newCommand.RequiredPermissions = PermissionType.ServerOwner | PermissionType.Admin | PermissionType.Moderator | PermissionType.SubModerator;
 			newCommand.OnExecute += async e => {
-				await CloseThread(e.Channel);
+				await CloseThread(e.Channel, e.CommandId.ToLower() == "close");
+				await e.Message.AddReactionAsync(new Emoji("✅"));
 			};
 			commands.Add(newCommand);
+			commands.Add(newCommand.CreateCopy("silentClose"));
 
 			return commands;
 		}
@@ -285,7 +289,7 @@ namespace Valkyrja.modmail
 			return channel as ITextChannel;
 		}
 
-		private async Task CloseThread(SocketTextChannel channel)
+		private async Task CloseThread(SocketTextChannel channel, bool notify = true)
 		{
 			Match match = this.IdRegex.Match(channel.Topic);
 			if( !match.Success || !guid.TryParse(match.Value, out guid userId))
@@ -297,7 +301,7 @@ namespace Valkyrja.modmail
 			await channel.ModifyAsync(c => c.CategoryId = this.Client.Config.ModmailArchiveCategoryId);
 
 			SocketCategoryChannel category = channel.Guild.GetCategoryChannel(this.Client.Config.ModmailArchiveCategoryId);
-			while( category?.Channels.Count > this.Client.Config.ModmailArchiveLimit )
+			while( (category?.Channels.Count ?? 0) > this.Client.Config.ModmailArchiveLimit )
 			{
 				SocketGuildChannel oldChannel = category.Channels.OrderBy(c => c.Id).FirstOrDefault();
 				if( oldChannel == null )
@@ -305,7 +309,8 @@ namespace Valkyrja.modmail
 				await oldChannel.DeleteAsync();
 			}
 
-			await SendModmailPm(channel, userId, "Thread closed. You're welcome to send another message, should you wish to contact the moderators again.");
+			if( notify )
+				await SendModmailPm(channel, userId, "Thread closed. You're welcome to send another message, should you wish to contact the moderators again.");
 		}
 
 		public Task Update(IValkyrjaClient iClient)
