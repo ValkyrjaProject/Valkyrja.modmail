@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,7 @@ namespace Valkyrja.modmail
 		public bool DoUpdate{ get; set; } = true;
 
 		private Regex IdRegex = new Regex("\\d+", RegexOptions.Compiled);
+		private  readonly ConcurrentDictionary<guid, guid> ReplyMsgIds = new ConcurrentDictionary<guid, guid>();
 
 		public List<Command> Init(IValkyrjaClient iClient)
 		{
@@ -29,6 +31,7 @@ namespace Valkyrja.modmail
 			List<Command> commands = new List<Command>();
 
 			this.Client.Events.MessageReceived += OnMessageReceived;
+			this.Client.Events.MessageUpdated += OnMessageUpdated;
 
 // !contact
 			Command newCommand = new Command("contact");
@@ -44,7 +47,7 @@ namespace Valkyrja.modmail
 					return;
 				}
 
-				ITextChannel channel = await FindOrCreateThread(userIds.First(), true);
+				ITextChannel channel = await FindOrCreateThread(userIds.First(), true, false);
 				if( channel == null )
 				{
 					await e.SendReplySafe("Failed to create a channel.");
@@ -77,7 +80,7 @@ namespace Valkyrja.modmail
 				}
 
 				Embed embed = GetMessageEmbed(e.Message);
-				await SendModmailPm(e.Channel, userId, null, embed);
+				await SendModmailPm(e, userId, null, embed);
 			};
 			commands.Add(newCommand);
 
@@ -104,7 +107,7 @@ namespace Valkyrja.modmail
 
 				uint color = uint.Parse(this.Client.Config.ModmailEmbedColorMods.TrimStart('#'), System.Globalization.NumberStyles.AllowHexSpecifier);
 				Embed embed = GetMessageEmbed("Moderators", e.Server.Guild.IconUrl, "Moderator", color, e.Message);
-				await SendModmailPm(e.Channel, userId, null, embed);
+				await SendModmailPm(e, userId, null, embed);
 			};
 			commands.Add(newCommand);
 
@@ -115,7 +118,7 @@ namespace Valkyrja.modmail
 			newCommand.ManPage = new ManPage("", "");
 			newCommand.RequiredPermissions = PermissionType.ServerOwner | PermissionType.Admin | PermissionType.Moderator | PermissionType.SubModerator;
 			newCommand.OnExecute += async e => {
-				await CloseThread(e.Channel, e.CommandId.ToLower() == "close");
+				await CloseThread(e, e.CommandId.ToLower() == "close");
 				await e.Message.AddReactionAsync(new Emoji("✅"));
 			};
 			commands.Add(newCommand);
@@ -133,12 +136,12 @@ namespace Valkyrja.modmail
 
 			try
 			{
-				ITextChannel channel = await FindOrCreateThread(message.Author.Id, true);
+				ITextChannel channel = await FindOrCreateThread(message.Author.Id, true, true);
 				if( channel == null )
 					return;
 
 				Embed embed = GetMessageEmbed(message);
-				await channel.SendMessageAsync(embed: embed);
+				await SendThreadReply(channel, message.Id, embed: embed);
 				await message.AddReactionAsync(new Emoji("✅"));
 			}
 			catch( Exception e )
@@ -148,7 +151,34 @@ namespace Valkyrja.modmail
 			}
 		}
 
-		private async Task SendModmailPm(SocketTextChannel replyChannel, guid userId, string message, Embed embed = null)
+		private async Task OnMessageUpdated(IMessage originalMessage, SocketMessage updatedMessage, ISocketMessageChannel _)
+		{
+			if( originalMessage.Content == updatedMessage.Content )
+				return;
+			if( updatedMessage.Author.Id == this.Client.DiscordClient.CurrentUser.Id )
+				return;
+			if( !(updatedMessage.Channel is SocketDMChannel) ) //Not a PM
+				return;
+
+			try
+			{
+				await updatedMessage.RemoveAllReactionsAsync();
+				ITextChannel channel = await FindOrCreateThread(updatedMessage.Author.Id, true, true);
+				if( channel == null )
+					return;
+
+				Embed embed = GetMessageEmbed(updatedMessage);
+				await SendThreadReply(channel, updatedMessage.Id, embed: embed);
+				await updatedMessage.AddReactionAsync(new Emoji("✅"));
+			}
+			catch( Exception e )
+			{
+				await this.HandleException(e, "OnMessageReceived", 0);
+				await updatedMessage.AddReactionAsync(new Emoji("❌"));
+			}
+		}
+
+		private async Task SendModmailPm(CommandArguments commandArgs, guid userId, string message, Embed embed = null)
 		{
 			SocketGuildUser user = null;
 			foreach( Server server in this.Client.Servers.Values )
@@ -160,7 +190,7 @@ namespace Valkyrja.modmail
 
 			if( user == null )
 			{
-				await replyChannel.SendMessageSafe($"User <@{userId}> not found.");
+				await commandArgs.SendReplySafe($"User <@{userId}> not found.");
 				return;
 			}
 			try
@@ -168,23 +198,45 @@ namespace Valkyrja.modmail
 				await user.SendMessageSafe(message, embed);
 
 				if( embed != null )
-					await replyChannel.SendMessageSafe("Message sent:", embed);
+					await commandArgs.SendReplySafe("Message sent:", embed);
 				else
-					await replyChannel.SendMessageSafe("Thread closed.");
+					await commandArgs.SendReplySafe("Thread closed.");
 			}
 			catch( HttpException e ) when( (int)e.HttpCode == 403 || (e.DiscordCode.HasValue && e.DiscordCode == 50007) || e.Message.Contains("50007") )
 			{
-				await replyChannel.SendMessageSafe("I was unable to send the PM - they have disabled PMs from server members!");
+				await commandArgs.SendReplySafe("I was unable to send the PM - they have disabled PMs from server members!");
 			}
 			catch( HttpException e ) when( (int)e.HttpCode >= 500 )
 			{
-				await replyChannel.SendMessageSafe("I was unable to send the PM - received Discord Server Error 500 - please try again.");
+				await commandArgs.SendReplySafe("I was unable to send the PM - received Discord Server Error 500 - please try again.");
 			}
 			catch( Exception e )
 			{
 				await this.HandleException(e, "SendModmailPm", user.Guild.Id);
-				await replyChannel.SendMessageSafe("Unknown error.");
+				await commandArgs.SendReplySafe("Unknown error.");
 			}
+		}
+
+		private async Task SendThreadReply(ITextChannel channel, guid msgId, string message = null, Embed embed = null, AllowedMentions allowedMentions = null)
+		{
+			//await this.Client.LogMessage(LogType.Response, this.Channel, this.Client.GlobalConfig.UserId, message);
+			if( message == null && embed == null )
+				return;
+
+			if( this.ReplyMsgIds.ContainsKey(msgId) )
+			{
+				if( await channel.GetMessageAsync(this.ReplyMsgIds[msgId]) is SocketUserMessage msg )
+				{
+					await msg.ModifyAsync(m => {
+						m.Content = message;
+						m.Embed = embed;
+					});
+					return;
+				}
+			}
+
+			IUserMessage reply = await channel.SendMessageAsync(message, embed: embed, allowedMentions: allowedMentions);
+			this.ReplyMsgIds.TryAdd(msgId, reply.Id);
 		}
 
 		private Embed GetMessageEmbed(IMessage message)
@@ -256,7 +308,7 @@ namespace Valkyrja.modmail
 			return embedBuilder.Build();
 		}
 
-		private async Task<ITextChannel> FindOrCreateThread(guid userId, bool sendUserInfo)
+		private async Task<ITextChannel> FindOrCreateThread(guid userId, bool sendUserInfo, bool sendCustomMessage = false)
 		{
 			SocketGuildUser user = null;
 			Server server = this.Client.Servers.Values.FirstOrDefault(s => (user = s.Guild.Users.FirstOrDefault(u => u.Id == userId)) != null);
@@ -273,7 +325,7 @@ namespace Valkyrja.modmail
 				if( sendUserInfo )
 				{
 					string message = null;
-					if( !string.IsNullOrEmpty(this.Client.Config.ModmailNewThreadMessage) )
+					if( sendCustomMessage && !string.IsNullOrEmpty(this.Client.Config.ModmailNewThreadMessage) )
 						 message = this.Client.Config.ModmailNewThreadMessage;
 					Embed embed = GetUserInfoEmbed(user);
 					((ITextChannel)channel)?.SendMessageAsync(message, embed: embed);
@@ -289,18 +341,18 @@ namespace Valkyrja.modmail
 			return channel as ITextChannel;
 		}
 
-		private async Task CloseThread(SocketTextChannel channel, bool notify = true)
+		private async Task CloseThread(CommandArguments commandArgs, bool notify = true)
 		{
-			Match match = this.IdRegex.Match(channel.Topic);
+			Match match = this.IdRegex.Match(commandArgs.Channel.Topic);
 			if( !match.Success || !guid.TryParse(match.Value, out guid userId))
 			{
-				await channel.SendMessageAsync("This does not seem to be a modmail thread. This command can only be used in a modmail thread channel.");
+				await commandArgs.SendReplySafe("This does not seem to be a modmail thread. This command can only be used in a modmail thread channel.");
 				return;
 			}
 
-			await channel.ModifyAsync(c => c.CategoryId = this.Client.Config.ModmailArchiveCategoryId);
+			await commandArgs.Channel.ModifyAsync(c => c.CategoryId = this.Client.Config.ModmailArchiveCategoryId);
 
-			SocketCategoryChannel category = channel.Guild.GetCategoryChannel(this.Client.Config.ModmailArchiveCategoryId);
+			SocketCategoryChannel category = commandArgs.Channel.Guild.GetCategoryChannel(this.Client.Config.ModmailArchiveCategoryId);
 			while( (category?.Channels.Count ?? 0) > this.Client.Config.ModmailArchiveLimit )
 			{
 				SocketGuildChannel oldChannel = category.Channels.OrderBy(c => c.Id).FirstOrDefault();
@@ -310,7 +362,7 @@ namespace Valkyrja.modmail
 			}
 
 			if( notify )
-				await SendModmailPm(channel, userId, "Thread closed. You're welcome to send another message, should you wish to contact the moderators again.");
+				await SendModmailPm(commandArgs, userId, "Thread closed. You're welcome to send another message, should you wish to contact the moderators again.");
 		}
 
 		public Task Update(IValkyrjaClient iClient)
