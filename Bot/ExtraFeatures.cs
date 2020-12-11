@@ -69,7 +69,7 @@ namespace Valkyrja.modules
 
 				bool debug = false;
 				IMessage msg = null;
-				SocketTextChannel channel = e.Channel;
+				SocketTextChannel channel = null;
 				EmbedFieldBuilder currentField = null;
 				EmbedBuilder embedBuilder = new EmbedBuilder();
 
@@ -113,7 +113,7 @@ namespace Valkyrja.modules
 								return;
 							}
 							if( debug )
-								await e.SendReplySafe($"Channel set: `{channel.Name}`");
+								await e.Channel.SendMessageSafe($"Channel set: `{channel.Name}`");
 
 							break;
 						case "--title":
@@ -125,7 +125,7 @@ namespace Valkyrja.modules
 
 							embedBuilder.WithTitle(value);
 							if( debug )
-								await e.SendReplySafe($"Title set: `{value}`");
+								await e.Channel.SendMessageSafe($"Title set: `{value}`");
 
 							break;
 						case "--description":
@@ -137,7 +137,7 @@ namespace Valkyrja.modules
 
 							embedBuilder.WithDescription(value);
 							if( debug )
-								await e.SendReplySafe($"Description set: `{value}`");
+								await e.Channel.SendMessageSafe($"Description set: `{value}`");
 
 							break;
 						case "--footer":
@@ -149,7 +149,7 @@ namespace Valkyrja.modules
 
 							embedBuilder.WithFooter(value);
 							if( debug )
-								await e.SendReplySafe($"Description set: `{value}`");
+								await e.Channel.SendMessageSafe($"Description set: `{value}`");
 
 							break;
 						case "--image":
@@ -164,7 +164,7 @@ namespace Valkyrja.modules
 							}
 
 							if( debug )
-								await e.SendReplySafe($"Image URL set: `{value}`");
+								await e.Channel.SendMessageSafe($"Image URL set: `{value}`");
 
 							break;
 						case "--thumbnail":
@@ -179,7 +179,7 @@ namespace Valkyrja.modules
 							}
 
 							if( debug )
-								await e.SendReplySafe($"Thumbnail URL set: `{value}`");
+								await e.Channel.SendMessageSafe($"Thumbnail URL set: `{value}`");
 
 							break;
 						case "--color":
@@ -192,7 +192,7 @@ namespace Valkyrja.modules
 
 							embedBuilder.WithColor(color);
 							if( debug )
-								await e.SendReplySafe($"Color `{value}` set.");
+								await e.Channel.SendMessageSafe($"Color `{value}` set.");
 
 							break;
 						case "--fieldName":
@@ -216,7 +216,7 @@ namespace Valkyrja.modules
 
 							embedBuilder.AddField(currentField = new EmbedFieldBuilder().WithName(value));
 							if( debug )
-								await e.SendReplySafe($"Creating new field `{currentField.Name}`");
+								await e.Channel.SendMessageSafe($"Creating new field `{currentField.Name}`");
 
 							break;
 						case "--fieldValue":
@@ -234,13 +234,13 @@ namespace Valkyrja.modules
 
 							currentField.WithValue(value);
 							if( debug )
-								await e.SendReplySafe($"Setting value:\n```\n{value}\n```\n...for field:`{currentField.Name}`");
+								await e.Channel.SendMessageSafe($"Setting value:\n```\n{value}\n```\n...for field:`{currentField.Name}`");
 
 							break;
 						case "--edit":
-							if( !guid.TryParse(value, out guid msgId) || (msg = await channel.GetMessageAsync(msgId)) == null )
+							if( !guid.TryParse(value, out guid msgId) || channel == null || (msg = await channel.GetMessageAsync(msgId)) == null )
 							{
-								await e.SendReplySafe($"`--edit` did not find a message with ID `{value}` in the <#{channel.Id}> channel.");
+								await e.SendReplySafe($"`--edit` did not find a message with ID `{value}` in the <#{channel?.Id ?? 0}> channel.");
 								return;
 							}
 
@@ -260,7 +260,10 @@ namespace Valkyrja.modules
 				switch( msg )
 				{
 					case null:
-						await channel.SendMessageAsync(embed: embedBuilder.Build());
+						if( channel == null )
+							await e.SendReplySafe(embed: embedBuilder.Build());
+						else
+							await channel.SendMessageAsync(embed: embedBuilder.Build());
 						break;
 					case RestUserMessage message:
 						await message?.ModifyAsync(m => m.Embed = embedBuilder.Build());
