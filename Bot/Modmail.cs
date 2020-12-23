@@ -180,10 +180,12 @@ namespace Valkyrja.modmail
 
 		private async Task SendModmailPm(CommandArguments commandArgs, guid userId, string message, Embed embed = null)
 		{
-			SocketGuildUser user = null;
+			IGuildUser user = null;
 			foreach( Server server in this.Client.Servers.Values )
 			{
 				user = server.Guild.Users.FirstOrDefault(u => u.Id == userId);
+				if( user == null )
+					user = await this.Client.DiscordClient.Rest.GetGuildUserAsync(server.Id, userId);
 				if( user != null )
 					break;
 			}
