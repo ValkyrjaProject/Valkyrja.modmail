@@ -301,23 +301,25 @@ namespace Valkyrja.modmail
 			return embedBuilder.Build();
 		}
 
-		private Embed GetUserInfoEmbed(SocketGuildUser user)
+		private Embed GetUserInfoEmbed(IGuildUser user)
 		{
 			EmbedBuilder embedBuilder = new EmbedBuilder()
 				.WithAuthor(new EmbedAuthorBuilder{IconUrl = user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl(), Name = user.GetUsername()})
 				.WithTimestamp(Utils.GetTimeFromId(user.Id))
 				.WithFooter(new EmbedFooterBuilder{Text = "Account created: " + Utils.GetTimestamp(Utils.GetTimeFromId(user.Id))})
 				.AddField("Username", $"`{user.GetUsername()}`", true)
-				.AddField("User ID", $"`{user.Id}`", true)
-				.AddField("Roles", $"{user.Roles.Select(r => r.Name.Replace('`', '\'')).ToNames()}", false);
+				.AddField("User ID", $"`{user.Id}`", true);
+
+			if( user is SocketGuildUser socketUser )
+				embedBuilder.AddField("Roles", $"{socketUser.Roles.Select(r => r.Name.Replace('`', '\'')).ToNames()}", false);
 
 			return embedBuilder.Build();
 		}
 
 		private async Task<ITextChannel> FindOrCreateThread(guid userId, bool sendUserInfo, bool sendCustomMessage = false)
 		{
-			SocketGuildUser user = null;
-			Server server = this.Client.Servers.Values.FirstOrDefault(s => (user = s.Guild.Users.FirstOrDefault(u => u.Id == userId)) != null);
+			IGuildUser user = null;
+			Server server = this.Client.Servers.Values.FirstOrDefault(s => (user = s.Guild.Users.FirstOrDefault(u => u.Id == userId)) != null || (user = this.Client.DiscordClient.Rest.GetGuildUserAsync(s.Id, userId).GetAwaiter().GetResult()) != null);
 			if( server == null || !this.Client.Servers.ContainsKey(this.Client.Config.ModmailServerId) || (server = this.Client.Servers[this.Client.Config.ModmailServerId]) == null )
 				return null;
 
