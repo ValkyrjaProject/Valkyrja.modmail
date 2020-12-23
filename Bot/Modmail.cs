@@ -286,11 +286,17 @@ namespace Valkyrja.modmail
 				messageText = message.Content.Substring($"{this.Client.CoreConfig.CommandPrefix}reply".Length);
 			if( message.Content.ToLower().StartsWith($"{this.Client.CoreConfig.CommandPrefix}anonreply") )
 				messageText = message.Content.Substring($"{this.Client.CoreConfig.CommandPrefix}anonReply".Length);
-			if( !string.IsNullOrEmpty(messageText) )
-				embedBuilder.WithDescription(messageText);
 
 			if( message.Attachments?.Any() ?? false )
-				embedBuilder.WithImageUrl(message.Attachments.First().Url);
+			{
+				string first = message.Attachments.First().Url;
+				if( first.ToLower().EndsWith(".jpg") || first.ToLower().EndsWith(".jpeg") || first.ToLower().EndsWith(".png") || first.ToLower().EndsWith(".gif") || first.ToLower().EndsWith(".bmp") || first.ToLower().EndsWith(".webp") )
+					embedBuilder.WithImageUrl(message.Attachments.First().Url);
+				else messageText += $"\n\n {first}";
+			}
+
+			if( !string.IsNullOrEmpty(messageText) )
+				embedBuilder.WithDescription(messageText);
 
 			return embedBuilder.Build();
 		}
