@@ -204,7 +204,7 @@ namespace Valkyrja.modmail
 				else
 					await commandArgs.SendReplySafe("Thread closed.");
 			}
-			catch( HttpException e ) when( (int)e.HttpCode == 403 || (e.DiscordCode.HasValue && e.DiscordCode == 50007) || e.Message.Contains("50007") )
+			catch( HttpException e ) when( (int)e.HttpCode == 403 || (e.DiscordCode.HasValue && e.DiscordCode == DiscordErrorCode.CannotSendMessageToUser) || e.Message.Contains("50007") )
 			{
 				await commandArgs.SendReplySafe("I was unable to send the PM - they have disabled PMs from server members!");
 			}
