@@ -16,8 +16,9 @@ namespace Valkyrja.modules
 {
 	public class ExtraFeatures: IModule
 	{
-		private readonly Regex EmbedParamRegex = new Regex("--?\\w+.*?(?=\\s--?\\w|$)", RegexOptions.Singleline | RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
-		private readonly Regex EmbedOptionRegex = new Regex("--?\\w+", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
+		private readonly Regex EmbedParamRegex = new Regex("(?<=\\s|^)--?\\w+.*?(?=\\s--?\\w|$)", RegexOptions.Singleline | RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
+		private readonly Regex EmbedOptionRegex = new Regex("(?<=\\s|^)--?\\w+", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
+		private readonly Regex EmbedEscapeRegex = new Regex("(?<=\\s|^)\\\\(?=--?\\w)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
 
 		private IValkyrjaClient Client;
 
@@ -75,6 +76,7 @@ namespace Valkyrja.modules
 
 				foreach( Match match in this.EmbedParamRegex.Matches(e.TrimmedMessage) )
 				{
+					string matchValue = this.EmbedEscapeRegex.Replace(match.Value, "");
 					string optionString = this.EmbedOptionRegex.Match(match.Value).Value;
 
 					if( optionString == "--fieldInline" )
